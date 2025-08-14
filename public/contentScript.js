@@ -1,11 +1,36 @@
-import { MSG } from "@common/constants";
-import { findActiveEditable } from "./gmailLocator";
+const MSG = {
+  REWRITE_TEXT: "CHAMELEON_REWRITE_TEXT",
+  APPLY_REWRITE: "CHAMELEON_APPLY_REWRITE",
+  SAVE_LAST_SOURCE: "CHAMELEON_SAVE_LAST_SOURCE",
+  GET_LAST_SOURCE: "CHAMELEON_GET_LAST_SOURCE",
+  OPEN_OPTIONS: "CHAMELEON_OPEN_OPTIONS",
+};
 
-let mini: HTMLDivElement;
-let toast: HTMLDivElement;
-let lastRange: Range | null = null;
+// gmail editable finder
+function findActiveEditable() {
+  const candidates = Array.from(
+    document.querySelectorAll('div[aria-label="Message Body"][contenteditable="true"]')
+  );
 
-// style injector 
+  const sel = window.getSelection();
+  if (sel && sel.anchorNode) {
+    const el = closestEditable(sel.anchorNode);
+    if (el) return el;
+  }
+  return candidates.find((el) => el.matches(":focus-within")) || candidates[0] || null;
+}
+function closestEditable(node) {
+  let n = node instanceof Element ? node : (node && node.parentElement) || null;
+  while (n) {
+    if (n.matches && n.matches('div[aria-label="Message Body"][contenteditable="true"]')) {
+      return n;
+    }
+    n = n.parentElement;
+  }
+  return null;
+}
+
+// inline css
 const CHAMELEON_STYLE_ID = "chameleon-inline-style";
 const STYLE = `
 #chameleon-mini {
@@ -40,7 +65,6 @@ const STYLE = `
   z-index: 2147483647;
 }
 `;
-
 function ensureStyle() {
   if (document.getElementById(CHAMELEON_STYLE_ID)) return;
   const el = document.createElement("style");
@@ -49,11 +73,16 @@ function ensureStyle() {
   document.documentElement.appendChild(el);
 }
 
+// main logic
+let mini;
+let toast;
+let lastRange = null;
 
 init();
 
 function init() {
   ensureStyle();
+
   mini = document.createElement("div");
   mini.id = "chameleon-mini";
   mini.innerHTML = `<span class="dot"></span><span>Rewrite ✨</span>`;
@@ -71,8 +100,8 @@ function init() {
   window.addEventListener("resize", hideMini, true);
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (msg?.type === MSG.APPLY_REWRITE) {
-      applyRewrite(msg.payload?.text || "");
+    if (msg && msg.type === MSG.APPLY_REWRITE) {
+      applyRewrite((msg.payload && msg.payload.text) || "");
       sendResponse({ ok: true });
     }
   });
@@ -93,7 +122,7 @@ function handleSelection() {
   mini.style.display = "flex";
 }
 
-function positionMini(rect: DOMRect) {
+function positionMini(rect) {
   const padding = 8;
   mini.style.left = `${rect.right + padding}px`;
   mini.style.top = `${rect.top + window.scrollY - 2}px`;
@@ -109,13 +138,13 @@ async function onMiniClick() {
   setTimeout(() => (mini.innerHTML = `<span class="dot"></span><span>Rewrite ✨</span>`), 900);
 }
 
-function getSelectedText(): string {
+function getSelectedText() {
   const sel = window.getSelection();
   if (!sel || sel.isCollapsed) return "";
   return sel.toString().trim();
 }
 
-function applyRewrite(newText: string) {
+function applyRewrite(newText) {
   const editable = findActiveEditable();
   if (!editable) return;
 

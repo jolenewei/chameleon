@@ -14,5 +14,5 @@
     },
     "types": ["chrome", "node"]
   },
-  "include": ["src"]
+  "include": ["src", "public/contentScript.js"]
 }
