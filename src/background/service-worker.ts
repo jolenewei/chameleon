@@ -1,15 +1,39 @@
 import { DEFAULT_MODEL, MSG, STORAGE } from "@common/constants";
+const ENV_API_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
+const ENV_MODEL   = import.meta.env.VITE_OPENAI_MODEL as string | undefined;
+
+console.log("[Chameleon] SW loaded");
+
+// helper: prefer options value, fall back to .env
+async function getApiKey(): Promise<string | undefined> {
+  const obj = await chrome.storage.sync.get([STORAGE.API_KEY]);
+  const saved = obj[STORAGE.API_KEY] as string | undefined;
+  return saved || ENV_API_KEY;
+}
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   (async () => {
     try {
+      console.log("[Chameleon] onMessage", message?.type);
+
       switch (message?.type) {
         case MSG.REWRITE_TEXT: {
           const { text, tone, goal, customTone, customGoal, customPrompt, compareTones, tonesForCompare } = message.payload;
+        
+          // get key & model
+          const [keyObj, modelObj] = await Promise.all([
+            getApiKey(),
+            chrome.storage.sync.get([STORAGE.MODEL])
+          ]);
+          const apiKey = keyObj;
+          const model = (modelObj[STORAGE.MODEL] as string) || ENV_MODEL || DEFAULT_MODEL;
 
-          const sync = await chrome.storage.sync.get([STORAGE.API_KEY, STORAGE.MODEL]);
-          const apiKey = sync[STORAGE.API_KEY];
-          const model = sync[STORAGE.MODEL] || DEFAULT_MODEL;
+          console.log("[Chameleon] rewrite request", {
+            hasKey: !!apiKey,
+            model,
+            compareTones: !!compareTones,
+            textLen: (text || "").length
+          });
 
           if (!apiKey) {
             sendResponse({ ok: false, error: "NO_API_KEY" });
@@ -19,6 +43,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
           const prompt = buildPrompt({ text, tone, goal, customTone, customGoal, customPrompt, compareTones });
           const data = await callOpenAI({ apiKey, model, prompt, compareTones, tones: tonesForCompare });
+
+          console.log("[Chameleon] rewrite success", data);
 
           sendResponse({ ok: true, data });
           return;
@@ -43,10 +69,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           return;
       }
     } catch (e: any) {
+      console.error("[Chameleon] SW error", e); 
       sendResponse({ ok: false, error: e?.message || String(e) });
     }
   })();
-
   return true; // async
 });
 
@@ -101,54 +127,36 @@ async function callOpenAI(params: {
 }) {
   const { apiKey, model, prompt, compareTones, tones = [] } = params;
 
-  const body = compareTones
-    ? {
-        model,
-        input: [
-          { role: "developer", content: "Return valid JSON only when JSON is requested." },
-          { role: "user", content: prompt },
-          { role: "user", content: `Tones to compare: ${tones.join(", ")}.` }
-        ],
-        text_format: {
-          type: "json_schema",
-          schema: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                tone: { type: "string" },
-                text: { type: "string" }
-              },
-              required: ["tone", "text"]
-            }
-          }
-        }
-      }
-    : {
-        model,
-        input: [
-          { role: "developer", content: "Return only the rewritten email text. No preamble." },
-          { role: "user", content: prompt }
-        ]
-      };
+  const messages = compareTones
+    ? [
+        { role: "system", content: "Return valid JSON only when JSON is requested." },
+        { role: "user", content: prompt },
+        { role: "user", content: `Tones to compare: ${tones.join(", ")}.` }
+      ]
+    : [
+        { role: "system", content: "Return only the rewritten email text. No preamble." },
+        { role: "user", content: prompt }
+      ];
 
-  const res = await fetch("https://api.openai.com/v1/responses", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ model, messages, temperature: 0.3 })
   });
 
   if (!res.ok) {
-    throw new Error(`OpenAI error ${res.status}: ${await res.text()}`);
+    let detail = ""; try { detail = await res.text(); } catch {}
+    if (res.status === 429) throw new Error("OpenAI 429: Rate limit or no credits. Check billing/limits.");
+    if (res.status === 401) throw new Error("OpenAI 401: Invalid API key.");
+    throw new Error(`OpenAI error ${res.status}: ${detail || res.statusText}`);
   }
 
   const data = await res.json() as any;
-  const text = (data.output_text ?? data.content?.[0]?.text ?? data.choices?.[0]?.message?.content ?? "").trim();
+  const text = (data.choices?.[0]?.message?.content ?? "").trim();
 
   if (compareTones) {
     try { return { compare: JSON.parse(text) }; }
     catch { return { compare: tones.map(t => ({ tone: t, text })) }; }
   }
-
   return { text };
 }

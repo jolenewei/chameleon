@@ -12,7 +12,7 @@
     "paths": {
       "@common/*": ["src/common/*"]
     },
-    "types": ["chrome", "node"]
+    "types": ["chrome", "node", "vite/client"]
   },
   "include": ["src", "public/contentScript.js"]
 }

@@ -8,27 +8,36 @@ const MSG = {
 
 // gmail editable finder
 function findActiveEditable() {
-  const candidates = Array.from(
-    document.querySelectorAll('div[aria-label="Message Body"][contenteditable="true"]')
-  );
-
+  // try current selection container first
   const sel = window.getSelection();
   if (sel && sel.anchorNode) {
-    const el = closestEditable(sel.anchorNode);
-    if (el) return el;
+    const near = closestEditable(sel.anchorNode);
+    if (near) return near;
   }
-  return candidates.find((el) => el.matches(":focus-within")) || candidates[0] || null;
+  // 1) common gmail compose
+  const a = document.querySelector('div[contenteditable="true"][aria-label*="Message"]');
+  if (a) return a;
+  // 2) fallback: any role="textbox" inside compose
+  const b = document.querySelector('div[role="textbox"][contenteditable="true"]');
+  if (b) return b;
+  // 3) last resort: any contenteditable in the viewport
+  const cands = Array.from(document.querySelectorAll('div[contenteditable="true"]'));
+  return cands.find(el => el.offsetParent !== null) || null;
 }
+
 function closestEditable(node) {
-  let n = node instanceof Element ? node : (node && node.parentElement) || null;
-  while (n) {
-    if (n.matches && n.matches('div[aria-label="Message Body"][contenteditable="true"]')) {
-      return n;
-    }
-    n = n.parentElement;
+  let el = node instanceof Element ? node : (node && node.parentElement) || null;
+  while (el) {
+    if (
+      el.matches &&
+      (el.matches('div[contenteditable="true"][aria-label*="Message"]') ||
+       el.matches('div[role="textbox"][contenteditable="true"]'))
+    ) return el;
+    el = el.parentElement;
   }
   return null;
 }
+
 
 // inline css
 const CHAMELEON_STYLE_ID = "chameleon-inline-style";

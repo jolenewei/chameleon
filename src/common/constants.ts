@@ -12,4 +12,4 @@ export const STORAGE = {
   LAST_SOURCE_TEXT: "chameleon_last_source_text"
 } as const;
 
-export const DEFAULT_MODEL = "gpt-5-mini";
+export const DEFAULT_MODEL = "gpt-4o-mini";

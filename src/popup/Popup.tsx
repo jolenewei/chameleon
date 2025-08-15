@@ -32,6 +32,7 @@ export default function Popup() {
     const text = (usingText ?? source).trim();
     if (!text) return;
     setBusy(true);
+
     const payload = {
       text,
       tone: tone || (customTone ? "custom" : null),
@@ -41,7 +42,13 @@ export default function Popup() {
       customPrompt,
       compareTones: false
     };
+
+    console.log("[Chameleon] popup → rewrite payload", payload);
+
     const res = await chrome.runtime.sendMessage({ type: MSG.REWRITE_TEXT, payload });
+
+    console.log("[Chameleon] popup ← rewrite response", res);
+
     if (!res?.ok) {
       handleError(res?.error);
       setBusy(false);
