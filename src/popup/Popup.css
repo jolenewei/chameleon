@@ -1,45 +1,56 @@
 :root {
-    --bg: #0f1115;
-    --panel: #171A21;
-    --text: #e8ecf5;
-    --muted: #8b93a7;
-    --accent: #5da0ff;
-    --pill: #242938;
-}
-
-* {
-    box-sizing: border-box
+    --bg: white;
+    --bg-elev: #ffffff;
+    --text: #111111;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #90c388;
+    --accent-weak: #a9c6a5;
+    --pill: #16a34a;
 }
 
 html,
 body {
     margin: 0;
     padding: 0;
-    width: 360px;
+    width: 400px;
+    height: 400px;
     background: var(--bg);
     color: var(--text);
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
-.popup {}
+.popup {
+    background-color: var(--bg-elev);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+}
 
 .hdr {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    border-bottom: 1px solid #222;
-    background: var(--panel)
+    border-bottom: 1px solid var(--border);
 }
 
 .hdr img {
     width: 22px;
-    height: 22px
+    height: 22px;
 }
 
 .hdr h1 {
-    font-size: 16px;
-    margin: 0
+    font-size: 18px;
+    margin: 0;
+    color: black;
+}
+
+.hdr h2 {
+    font-size: 12px;
+    margin: 0;
+    color: black;
 }
 
 .hdr .gear {
@@ -53,22 +64,25 @@ body {
 }
 
 .sec {
-    padding: 10px 12px
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: black;
+    background-color: white;
 }
 
 label {
     display: block;
     margin-bottom: 6px;
     font-size: 12px;
-    color: var(--muted)
+    color: black;
 }
 
 textarea,
 input {
     width: 100%;
-    background: #0f1320;
-    border: 1px solid #222;
-    color: var(--text);
+    background-color: white;
+    border: 1px solid var(--border);
+    color: black;
     border-radius: 8px;
     padding: 8px;
     font-size: 12px;
@@ -77,7 +91,9 @@ input {
 
 textarea:focus,
 input:focus {
-    border-color: var(--accent)
+    border-color: var(--accent);
+    background-color: white;
+    color: black;
 }
 
 .row {
@@ -94,51 +110,62 @@ input:focus {
 .column {
     display: flex;
     flex-direction: column;
-    gap: 6px
+    gap: 6px;
+    background-color: white;
+}
+
+.instruction-input {
+    background-color: white;
+    color: black;
 }
 
 .pill {
-    background: var(--pill);
-    color: #dbe3ff;
-    border: 1px solid #2b3147;
+    background-color: #fff;
+    color: black;
+    border: 1px solid black;
     border-radius: 999px;
-    padding: 6px 10px;
-    font-size: 12px;
-    cursor: pointer
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-right: 8px;
 }
 
 .pill.active {
-    background: #2b3858;
-    border-color: #3b4b74
+    background-color: var(--accent);
+    border-color: black;
+    color: black;
+}
+.pill:hover {
+    background-color: var(--accent-weak);
 }
 
 .custom {
-    flex: 1
+    flex: 1;
+    background-color: white;
 }
 
 .tabs {
     display: flex;
     gap: 8px;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 8px 12px;
-    background: var(--panel);
-    border-top: 1px solid #222;
-    border-bottom: 1px solid #222
+    padding: 8px 14px;
+    background-color: white;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
 }
 
 .tab {
-    background: #212736;
-    color: #cfe0ff;
-    border: 1px solid #2b3147;
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    background-color: #fff;
+    color: var(--text);
+    border-radius: 999px;
     padding: 6px 10px;
-    font-size: 12px;
-    cursor: pointer
+    cursor: pointer;
 }
 
 .tab.active {
-    background: #2b3858
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
 }
 
 .grid {
@@ -148,7 +175,7 @@ input:focus {
 }
 
 .tone-card {
-    background: #121626;
+    background-color: white;
     border: 1px solid #222;
     border-radius: 10px;
     padding: 8px
@@ -172,22 +199,31 @@ input:focus {
 .ftr {
     padding: 8px 12px;
     color: var(--muted);
-    font-size: 11px;
-    border-top: 1px solid #222;
-    background: var(--panel)
+    font-size: 12px;
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+    margin: 8px 0 12px;
 }
 
 button[disabled] {
     opacity: 0.6;
-    cursor: not-allowed
+    cursor: default;
+}
+
+button:not(:disabled).primary {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
 }
 
 button {
-    background: var(--accent);
-    color: #001534;
-    border: 0;
-    border-radius: 8px;
-    padding: 8px 10px;
+    background-color: #fff;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 10px 12px;
     cursor: pointer;
-    font-weight: 600
 }

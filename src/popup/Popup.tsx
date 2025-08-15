@@ -20,13 +20,17 @@ export default function Popup() {
   const [tab, setTab] = useState<"rewrite"|"compare">("rewrite");
   const [comparePicks, setComparePicks] = useState<string[]>([]);
   const [compareResults, setCompareResults] = useState<CompareItem[]>([]);
-
+  
   useEffect(() => {
     (async () => {
-      const reply = await chrome.runtime.sendMessage({ type: MSG.GET_LAST_SOURCE });
-      if (reply?.ok && reply.text) setSource(reply.text);
+        try {
+        const reply = await chrome.runtime.sendMessage({ type: MSG.GET_LAST_SOURCE });
+        if (reply?.ok && reply.text) setSource(reply.text);
+        } catch (err) {
+        console.warn("[Chameleon] popup init: no SW yet (will wake on first action)", err);
+        }
     })();
-  }, []);
+   }, []);
 
   async function rewrite(usingText?: string) {
     const text = (usingText ?? source).trim();
@@ -65,10 +69,15 @@ export default function Popup() {
   }
 
   async function applyInGmail() {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) return;
-    await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result } });
-    window.close();
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab?.id || !result) return;
+        await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result } });
+        window.close();
+    } catch (err) {
+        alert("Open your Gmail compose window (and refresh the page), then try Replace in Gmail again.");
+        console.warn("[Chameleon] tabs.sendMessage failed", err);
+    }
   }
 
   async function runCompare() {
@@ -106,8 +115,9 @@ export default function Popup() {
   return (
     <div className="popup">
       <header className="hdr">
-        <img src="../assets/icon48.png" alt="icon" />
-        <h1>Chameleon</h1>
+        <img src="/assets/icon48.png" alt="icon" />
+        <h1>CHAMELEON</h1>
+        <h2>adapts your emails to what you want.</h2>
         <button className="gear" title="Settings" onClick={() => chrome.runtime.sendMessage({ type: MSG.OPEN_OPTIONS })}>⚙️</button>
       </header>
 
@@ -135,7 +145,7 @@ export default function Popup() {
 
         <div className="column">
           <label>Extra instructions (optional)</label>
-          <input value={customPrompt} onChange={e=>setCustomPrompt(e.target.value)} placeholder="e.g., shorter, include date, keep bullets…" />
+          <input className="instruction-input" value={customPrompt} onChange={e=>setCustomPrompt(e.target.value)} placeholder="e.g., shorter, include date, keep bullets…" />
         </div>
       </section>
 
@@ -147,9 +157,9 @@ export default function Popup() {
       {tab === "rewrite" ? (
         <section className="sec">
           <div className="row">
-            <button disabled={busy} onClick={()=>rewrite()}>Rewrite</button>
-            <button disabled={!canApply} onClick={applyInGmail}>Replace in Gmail</button>
-            <button disabled={!result || busy} onClick={rewriteAgain}>Rewrite Again</button>
+            <button className="primary" disabled={busy} onClick={()=>rewrite()}>Rewrite</button>
+            <button className="primary" disabled={!canApply} onClick={applyInGmail}>Replace in Gmail</button>
+            <button className="primary" disabled={!result || busy} onClick={rewriteAgain}>Rewrite Again</button>
           </div>
 
           <label>Result</label>
