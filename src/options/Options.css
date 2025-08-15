@@ -1,9 +1,9 @@
 :root {
-    --bg: #0f1115;
-    --panel: #171A21;
-    --text: #e8ecf5;
-    --muted: #8b93a7;
-    --accent: #5da0ff
+    --bg: white;
+    --panel: white;
+    --text: black;
+    --muted: #646465;
+    --accent: #46ac42;
 }
 
 * {
@@ -16,7 +16,7 @@ body {
     padding: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 .opt {

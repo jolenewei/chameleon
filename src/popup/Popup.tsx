@@ -118,7 +118,9 @@ export default function Popup() {
         <img src="/assets/icon48.png" alt="icon" />
         <h1>CHAMELEON</h1>
         <h2>adapts your emails to what you want.</h2>
-        <button className="gear" title="Settings" onClick={() => chrome.runtime.sendMessage({ type: MSG.OPEN_OPTIONS })}>⚙️</button>
+        <button className="settings" title="Settings" onClick={() => chrome.runtime.sendMessage({ type: MSG.OPEN_OPTIONS })}>
+            <img src="/assets/settings-icon.png" alt="settings" />
+        </button>
       </header>
 
       <section className="sec">
@@ -144,14 +146,14 @@ export default function Popup() {
         </div>
 
         <div className="column">
-          <label>Extra instructions (optional)</label>
+          <label>Extra Instructions (Optional)</label>
           <input className="instruction-input" value={customPrompt} onChange={e=>setCustomPrompt(e.target.value)} placeholder="e.g., shorter, include date, keep bullets…" />
         </div>
       </section>
 
       <nav className="tabs">
-        <button className={`tab ${tab==="rewrite"?"active":""}`} onClick={()=>setTab("rewrite")}>Rewrite</button>
-        <button className={`tab ${tab==="compare"?"active":""}`} onClick={()=>setTab("compare")}>Tone Compare</button>
+        <button className={`tab ${tab==="rewrite"?"active":""}`} onClick={()=>setTab("rewrite")}>Single Rewrite</button>
+        <button className={`tab ${tab==="compare"?"active":""}`} onClick={()=>setTab("compare")}>Compare Tones</button>
       </nav>
 
       {tab === "rewrite" ? (
