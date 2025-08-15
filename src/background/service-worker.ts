@@ -108,11 +108,13 @@ ${text}
   }
 
   const t = tone === "custom" ? (customTone || "") : tone || "";
-  const g = goal === "custom" ? (customGoal || "") : goal || "";
+  const g0 = goal === "custom" ? (customGoal || "") : goal || "";
+  const g = g0 == "auto" ? "" : g0;
 
   let directives = "";
   if (t) directives += `Tone: ${t}.\n`;
   if (g) directives += `Goal: ${g}.\n`;
+  if (g0 === "auto") directives += `Infer the likely goal from their message (e.g. follow-up / ask for help / apply for a job) and optimize for it.\n`;
   if (customPrompt) directives += `Additional notes: ${customPrompt}\n`;
 
   return base + directives + "Now return the rewritten text only.";

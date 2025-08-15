@@ -3,8 +3,8 @@ import { MSG } from "@common/constants";
 
 type CompareItem = { tone: string; text: string };
 
-const tones = ["casual","formal","friendly","assertive"] as const;
-const goals = ["follow-up","apply for job","ask for help"] as const;
+const tones = ["casual","formal","friendly","assertive", "slightly formal"] as const;
+const goals = ["auto", "follow-up","apply for job","ask for help"] as const;
 
 export default function Popup() {
   const [source, setSource] = useState("");
@@ -117,7 +117,7 @@ export default function Popup() {
       <header className="hdr">
         <img src="/assets/icon48.png" alt="icon" />
         <h1>CHAMELEON</h1>
-        <h2>adapts your emails to what you want.</h2>
+        <h2>adapts your emails to what you want</h2>
         <button className="settings" title="Settings" onClick={() => chrome.runtime.sendMessage({ type: MSG.OPEN_OPTIONS })}>
             <img src="/assets/settings-icon.png" alt="settings" />
         </button>
