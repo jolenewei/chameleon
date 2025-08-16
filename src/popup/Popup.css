@@ -5,35 +5,41 @@
     --border: #e5e7eb;
 
     --green: #16a34a;
-    --green-weak: #83dc8d;
+    --green-weak: #9dcb64;
     --green-weak-2: #eefbf2;
 
-    --grad: linear-gradient(90deg, #16a34a 0%, #3ecf8e 60%, #7de3b3 100%);
+    --grad: linear-gradient(90deg, #1e952c 0%, #64bc35 60%, #71c444 100%);
 }
 
+/* Base */
 html,
 body {
     margin: 0;
     padding: 0;
-    width: 400px;
+    width: 420px;
     background: #fff;
     color: var(--text);
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    /* use a CSP-friendly system stack (no external fonts) */
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     font-size: 13px;
     line-height: 1.35;
 }
 
+/* ---------- popup root ---------- */
 .popup {
     background: #fff;
-    padding: 5px;
+    padding: 10px;
     border: 1px solid var(--border);
     border-radius: 14px;
     overflow: auto;
     box-shadow: 0 6px 24px rgba(0, 0, 0, .08);
+    color: var(--text);
+    font-family: inherit;
+    /* ensure children inherit */
 }
 
-/* ---------- Header ---------- */
-.hdr {
+/* ---------- header ---------- */
+.popup .hdr {
     margin-top: 3px;
     display: flex;
     align-items: center;
@@ -43,25 +49,25 @@ body {
     color: #0b3b1f;
 }
 
-.brand {
+.popup .brand {
     display: flex;
     align-items: center;
     gap: 10px;
     flex: 1;
 }
 
-.brand img {
-    width: 22px;
-    height: 22px;
+.popup .brand img {
+    width: 24px;
+    height: 24px;
 }
 
-.title-wrap {
+.popup .title-wrap {
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
 
-.h1 {
+.popup .h1 {
     margin: 0;
     letter-spacing: .02em;
     font-size: 16px;
@@ -70,78 +76,88 @@ body {
     text-transform: uppercase;
 }
 
-.tag {
+.popup .tag {
     margin: 0;
     font-size: 11px;
     color: #0f5132;
 }
 
-.hdr .settings {
+.popup .hdr .settings {
     cursor: pointer;
     background-color: #fff;
     margin-bottom: 3px;
+    border: none;
 }
 
-.hdr .settings img {
-    width: 18px;
-    height: 18px;
+.popup .hdr .settings img {
+    width: 20px;
+    height: 20px;
     background-color: #fff;
+    border: none;
 }
 
-/* ---------- Sections ---------- */
-.sec {
-    padding: 8px 10px;
+/* ---------- sections ---------- */
+.popup .sec {
+    padding: 8px 8px;
     border-top: 1px solid #f6f8f7;
     border-bottom: 1px solid var(--border);
     background: #fff;
 }
 
-label {
+.popup label {
     display: block;
     margin-bottom: 4px;
-    font-size: 10px;
+    font-size: 11px;
     color: var(--muted);
 }
 
-/* compact inputs */
-textarea,
-input {
-    font-size: 10px;
+/* inputs */
+.popup textarea,
+.popup input {
     width: 100%;
     border: 1px solid var(--border);
     background: #fff;
-    background-color: #fff;
     border-radius: 10px;
     padding: 8px 10px;
     outline: none;
+    font-size: 12px;
+    line-height: 1.35;
+    font-family: inherit;
+    color: inherit;
 }
 
-textarea:focus,
-input:focus {
+.popup textarea::placeholder,
+.popup input::placeholder {
+    font-family: inherit;
+    color: #9aa3af;
+}
+
+.popup textarea:focus,
+.popup input:focus {
     border-color: var(--green);
     box-shadow: 0 0 0 3px var(--green-weak);
     background-color: #fff;
 }
 
-textarea {
+.popup textarea {
     resize: vertical;
     background-color: #fff;
 }
 
 /* rows */
-.row {
+.popup .row {
     display: flex;
     gap: 8px;
     align-items: center;
     margin: 8px 0;
 }
 
-.row.wrap {
+.popup .row.wrap {
     flex-wrap: wrap;
 }
 
-/* labels inside grouped rows (Tone/Goal) */
-.field-head {
+/* field headings */
+.popup .field-head {
     width: 100%;
     display: flex;
     align-items: center;
@@ -149,14 +165,14 @@ textarea {
     margin: 2px 0 6px;
 }
 
-.field-head .label {
-    font-weight: 500;
+.popup .field-head .label {
+    font-weight: 600;
     font-size: 13px;
     color: #0a2f1a;
 }
 
-/* pills smaller & neater */
-.pill {
+/* pills */
+.popup .pill {
     background: #fff;
     color: #0f172a;
     border: 1px solid #111;
@@ -166,31 +182,30 @@ textarea {
     cursor: pointer;
 }
 
-.pill.active {
+.popup .pill.active {
     background: var(--green);
     border-color: var(--green);
     color: #fff;
 }
 
-.pill:hover {
+.popup .pill:hover {
     background: var(--green-weak);
 }
 
-/* custom text inputs inline */
-.custom {
+.popup .custom {
     flex: 1;
-    font-size: 10px;
+    font-size: 12px;
     margin-right: 5px;
 }
 
-.custom-goal {
+.popup .custom-goal {
     flex: 1;
-    font-size: 10px;
+    font-size: 12px;
     margin-top: 5px;
 }
 
 /* ---------- tabs ---------- */
-.tabs {
+.popup .tabs {
     display: flex;
     gap: 0;
     padding: 0 12px;
@@ -199,22 +214,23 @@ textarea {
     border-bottom: 1px solid var(--border);
 }
 
-.tab {
+.popup .tab {
     position: relative;
     appearance: none;
     background: none;
     border: 0;
     cursor: pointer;
     padding: 10px 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: #334155;
+    font-family: inherit;
 }
 
-.tab+.tab {
+.popup .tab+.tab {
     margin-left: 8px;
 }
 
-.tab::after {
+.popup .tab::after {
     content: "";
     position: absolute;
     left: 8px;
@@ -226,97 +242,98 @@ textarea {
     transition: background .15s ease;
 }
 
-.tab.active {
+.popup .tab.active {
     color: #0a2f1a;
 }
 
-.tab.active::after {
+.popup .tab.active::after {
     background: var(--green);
 }
 
-.tab:hover::after {
+.popup .tab:hover::after {
     background: var(--green-weak);
 }
 
 /* grid for tone compare */
-.grid {
+.popup .grid {
     display: grid;
     gap: 8px;
 }
 
-.tone-card {
+.popup .tone-card {
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 8px;
     background: #fff;
 }
 
-.tone-title {
+.popup .tone-title {
     font-size: 12px;
     color: var(--green);
     margin-bottom: 6px;
 }
 
-.tone-body {
+.popup .tone-body {
     white-space: pre-wrap;
 }
 
 /* footer */
-.ftr {
+.popup .ftr {
     padding: 8px 12px;
     color: var(--muted);
     font-size: 11px;
 }
 
-/* primary actions: compact & green */
-button {
-    background-color: var(--green);
+/* buttons */
+.popup button {
+    background: var(--green);
     border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 0px;
-    padding: 8px 10px;
+    color: #fff;
+    border-radius: 10px;
+    padding: 6px 8px;
     cursor: pointer;
     font-size: 12px;
-    font-weight: 400;
+    font-weight: 500;
+    font-family: inherit;
 }
 
-button.primary {
-    background-color: var(--green);
-    border-color: var(--green);
+.popup button.primary {
+    background: var(--grad);
+    border-color: transparent;
     color: #fff;
-    font-size: 12px;
-    font-weight: 400;
 }
 
-button[disabled] {
+.popup button[disabled] {
     opacity: .6;
     cursor: default;
 }
 
-.textarea--source {
+/* sizes */
+.popup .textarea--source {
     min-height: 84px;
 }
 
-.textarea--result {
+.popup .textarea--result {
     min-height: 110px;
 }
 
-.group {
+.popup .group {
     padding: 2px 0 8px;
 }
 
-.group+.group {
+.popup .group+.group {
     border-top: 1px dashed #d9e7dc;
     margin-top: 8px;
     padding-top: 10px;
 }
 
-.small {
+.popup .small {
     font-size: 11px;
     color: var(--muted);
 }
 
-.toast {
+/* toast */
+.popup .toast {
     position: fixed;
     bottom: 12px;
     left: 50%;
@@ -329,6 +346,7 @@ button[disabled] {
     opacity: 0.9;
     animation: fadein 0.3s, fadeout 0.3s 1.7s;
     z-index: 9999;
+    font-family: inherit;
 }
 
 @keyframes fadein {
