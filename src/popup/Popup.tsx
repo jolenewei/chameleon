@@ -3,8 +3,8 @@ import { MSG } from "@common/constants";
 
 type CompareItem = { tone: string; text: string };
 
-const tones = ["casual","formal","friendly","assertive", "slightly formal"] as const;
-const goals = ["auto", "follow-up","apply for job","ask for help"] as const;
+const tones = ["casual","formal","friendly","assertive","slightly formal"] as const;
+const goals = ["auto","follow-up","apply for job","ask for help"] as const;
 
 export default function Popup() {
   const [source, setSource] = useState("");
@@ -20,17 +20,18 @@ export default function Popup() {
   const [tab, setTab] = useState<"rewrite"|"compare">("rewrite");
   const [comparePicks, setComparePicks] = useState<string[]>([]);
   const [compareResults, setCompareResults] = useState<CompareItem[]>([]);
-  
+
   useEffect(() => {
     (async () => {
-        try {
+      try {
         const reply = await chrome.runtime.sendMessage({ type: MSG.GET_LAST_SOURCE });
         if (reply?.ok && reply.text) setSource(reply.text);
-        } catch (err) {
-        console.warn("[Chameleon] popup init: no SW yet (will wake on first action)", err);
-        }
+      } catch (err) {
+        // SW might not be awake yet — no big deal
+        console.warn("[Chameleon] popup init: SW sleeping", err);
+      }
     })();
-   }, []);
+  }, []);
 
   async function rewrite(usingText?: string) {
     const text = (usingText ?? source).trim();
@@ -47,12 +48,7 @@ export default function Popup() {
       compareTones: false
     };
 
-    console.log("[Chameleon] popup → rewrite payload", payload);
-
     const res = await chrome.runtime.sendMessage({ type: MSG.REWRITE_TEXT, payload });
-
-    console.log("[Chameleon] popup ← rewrite response", res);
-
     if (!res?.ok) {
       handleError(res?.error);
       setBusy(false);
@@ -70,21 +66,22 @@ export default function Popup() {
 
   async function applyInGmail() {
     try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tab?.id || !result) return;
-        await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result } });
-        window.close();
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id || !result) return;
+      await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result } });
+      window.close();
     } catch (err) {
-        alert("Open your Gmail compose window (and refresh the page), then try Replace in Gmail again.");
-        console.warn("[Chameleon] tabs.sendMessage failed", err);
+      alert("Open Gmail (refresh it), place your cursor in the compose box, then try Replace in Gmail again.");
+      console.warn("[Chameleon] tabs.sendMessage failed", err);
     }
   }
 
   async function runCompare() {
-    const list = comparePicks.length ? comparePicks : tones as unknown as string[];
+    const list = comparePicks.length ? comparePicks : (tones as unknown as string[]);
     const text = source.trim();
     if (!text) return;
     setBusy(true);
+
     const payload = {
       text,
       tone: null,
@@ -106,7 +103,7 @@ export default function Popup() {
   }
 
   function handleError(err?: string) {
-    if (err === "NO_API_KEY") alert("Set your OpenAI API key in Options first (gear icon in the popup or from extensions page).");
+    if (err === "NO_API_KEY") alert("Set your OpenAI API key in Options first (gear icon).");
     else alert("Error: " + (err || "unknown"));
   }
 
@@ -114,48 +111,67 @@ export default function Popup() {
 
   return (
     <div className="popup">
+      {/* Header */}
       <header className="hdr">
-        <img src="/assets/icon48.png" alt="icon" />
-        <h1>CHAMELEON</h1>
-        <h2>adapts your emails to what you want</h2>
+        <div className="brand">
+          <img src="/assets/icon48.png" alt="icon" />
+          <div className="title-wrap">
+            <h1 className="h1">CHAMELEON</h1>
+            <p className="tag">adapts your emails to what you want</p>
+          </div>
+        </div>
         <button className="settings" title="Settings" onClick={() => chrome.runtime.sendMessage({ type: MSG.OPEN_OPTIONS })}>
-            <img src="/assets/settings-icon.png" alt="settings" />
+          <img src="/assets/settings-icon.png" alt="settings" />
         </button>
       </header>
 
+      {/* Selected text */}
       <section className="sec">
         <label>Selected Text</label>
-        <textarea rows={4} value={source} onChange={e=>setSource(e.target.value)} placeholder="Select text in Gmail or paste here..." />
+        <textarea
+          className="textarea--source"
+          rows={3}
+          value={source}
+          onChange={e=>setSource(e.target.value)}
+          placeholder="Select text in Gmail or paste here..."
+        />
       </section>
 
+      {/* Controls */}
       <section className="sec">
-        <div className="row wrap">
-          <label>Tone</label>
-          {tones.map(t => (
-            <button key={t} className={`pill ${tone===t ? "active":""}`} onClick={()=>setTone(t)}>{cap(t)}</button>
-          ))}
-          <input className="custom" value={customTone} onChange={e=>{ setCustomTone(e.target.value); setTone(null); }} placeholder="Custom tone…" />
+        <div className="group">
+          <div className="field-head"><span className="label">Tone</span></div>
+          <div className="row wrap">
+            {tones.map(t => (
+              <button key={t} className={`pill ${tone===t ? "active":""}`} onClick={()=>setTone(t)}>{cap(t)}</button>
+            ))}
+            <input className="custom" value={customTone} onChange={e=>{ setCustomTone(e.target.value); setTone(null); }} placeholder="Custom tone…" />
+          </div>
         </div>
 
-        <div className="row wrap">
-          <label>Goal</label>
-          {goals.map(g => (
-            <button key={g} className={`pill ${goal===g ? "active":""}`} onClick={()=>setGoal(g)}>{cap(g)}</button>
-          ))}
-          <input className="custom" value={customGoal} onChange={e=>{ setCustomGoal(e.target.value); setGoal(null); }} placeholder="Custom goal…" />
+        <div className="group">
+          <div className="field-head"><span className="label">Goal</span></div>
+          <div className="row wrap">
+            {goals.map(g => (
+              <button key={g} className={`pill ${goal===g ? "active":""}`} onClick={()=>setGoal(g)}>{cap(g)}</button>
+            ))}
+          </div>
+          <input className="custom-goal" value={customGoal} onChange={e=>{ setCustomGoal(e.target.value); setGoal(null); }} placeholder="Custom goal…" />
         </div>
 
-        <div className="column">
+        <div className="group">
           <label>Extra Instructions (Optional)</label>
-          <input className="instruction-input" value={customPrompt} onChange={e=>setCustomPrompt(e.target.value)} placeholder="e.g., shorter, include date, keep bullets…" />
+          <input value={customPrompt} onChange={e=>setCustomPrompt(e.target.value)} placeholder="e.g., shorter, include date, keep bullets…" />
         </div>
       </section>
 
+      {/* Tabs */}
       <nav className="tabs">
         <button className={`tab ${tab==="rewrite"?"active":""}`} onClick={()=>setTab("rewrite")}>Single Rewrite</button>
         <button className={`tab ${tab==="compare"?"active":""}`} onClick={()=>setTab("compare")}>Compare Tones</button>
       </nav>
 
+      {/* Bodies */}
       {tab === "rewrite" ? (
         <section className="sec">
           <div className="row">
@@ -165,7 +181,13 @@ export default function Popup() {
           </div>
 
           <label>Result</label>
-          <textarea rows={6} value={result} onChange={e=>setResult(e.target.value)} placeholder="Your rewrite will appear here…" />
+          <textarea
+            className="textarea--result"
+            rows={4}
+            value={result}
+            onChange={e=>setResult(e.target.value)}
+            placeholder="Your rewrite will appear here…"
+          />
         </section>
       ) : (
         <section className="sec">
@@ -184,7 +206,7 @@ export default function Popup() {
             ))}
           </div>
           <div className="row">
-            <button disabled={busy} onClick={runCompare}>Generate Comparison</button>
+            <button className="primary" disabled={busy} onClick={runCompare}>Generate Comparison</button>
           </div>
           <div className="grid">
             {compareResults.map((it, i)=>(
@@ -204,4 +226,4 @@ export default function Popup() {
   );
 }
 
-function cap(s: string) { return s[0].toUpperCase() + s.slice(1); }
+function cap(s: string){ return s[0].toUpperCase() + s.slice(1); }

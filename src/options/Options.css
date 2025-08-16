@@ -40,13 +40,14 @@ label {
 }
 
 input {
+    font-size: 10px;
     width: 100%;
-    background: #0f1320;
-    border: 1px solid #222;
-    color: var(--text);
-    border-radius: 8px;
-    padding: 10px;
-    outline: none
+    border: 1px solid #111;
+    background: #fff;
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 8px 10px;
+    outline: none;
 }
 
 input:focus {
