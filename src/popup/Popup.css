@@ -315,3 +315,40 @@ button[disabled] {
     font-size: 11px;
     color: var(--muted);
 }
+
+.toast {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0.9;
+    animation: fadein 0.3s, fadeout 0.3s 1.7s;
+    z-index: 9999;
+}
+
+@keyframes fadein {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+    }
+
+    to {
+        opacity: 0.9;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes fadeout {
+    from {
+        opacity: 0.9;
+    }
+
+    to {
+        opacity: 0;
+    }
+}

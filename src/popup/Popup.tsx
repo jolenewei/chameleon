@@ -20,6 +20,7 @@ export default function Popup() {
   const [tab, setTab] = useState<"rewrite"|"compare">("rewrite");
   const [comparePicks, setComparePicks] = useState<string[]>([]);
   const [compareResults, setCompareResults] = useState<CompareItem[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -58,11 +59,19 @@ export default function Popup() {
     setBusy(false);
   }
 
-  async function rewriteAgain() {
-    const seed = (result || source).trim();
-    if (!seed) return;
-    await rewrite(seed);
+  async function copyToClipboard() {
+    if (!result) return;
+    try {
+      await navigator.clipboard.writeText(result);
+      setToast("Copied!");
+      setTimeout(() => setToast(null), 2000);
+    } catch (e) {
+      console.error("Clipboard copy failed", e);
+      setToast("Copy failed");
+      setTimeout(() => setToast(null), 2000);
+    }
   }
+
 
   async function applyInGmail() {
     try {
@@ -111,7 +120,7 @@ export default function Popup() {
 
   return (
     <div className="popup">
-      {/* Header */}
+      {/* header */}
       <header className="hdr">
         <div className="brand">
           <img src="/assets/icon48.png" alt="icon" />
@@ -125,7 +134,7 @@ export default function Popup() {
         </button>
       </header>
 
-      {/* Selected text */}
+      {/* selected text */}
       <section className="sec">
         <label>Selected Text</label>
         <textarea
@@ -137,7 +146,7 @@ export default function Popup() {
         />
       </section>
 
-      {/* Controls */}
+      {/* controls */}
       <section className="sec">
         <div className="group">
           <div className="field-head"><span className="label">Tone</span></div>
@@ -165,19 +174,18 @@ export default function Popup() {
         </div>
       </section>
 
-      {/* Tabs */}
+      {/* tabs */}
       <nav className="tabs">
         <button className={`tab ${tab==="rewrite"?"active":""}`} onClick={()=>setTab("rewrite")}>Single Rewrite</button>
         <button className={`tab ${tab==="compare"?"active":""}`} onClick={()=>setTab("compare")}>Compare Tones</button>
       </nav>
 
-      {/* Bodies */}
       {tab === "rewrite" ? (
         <section className="sec">
           <div className="row">
             <button className="primary" disabled={busy} onClick={()=>rewrite()}>Rewrite</button>
             <button className="primary" disabled={!canApply} onClick={applyInGmail}>Replace in Gmail</button>
-            <button className="primary" disabled={!result || busy} onClick={rewriteAgain}>Rewrite Again</button>
+            <button className="primary" disabled={!result || busy} onClick={copyToClipboard}>Copy to Clipboard</button>
           </div>
 
           <label>Result</label>
@@ -222,6 +230,13 @@ export default function Popup() {
       <footer className="ftr">
         <small>Tip: select text in Gmail, then click the extension icon.</small>
       </footer>
+
+      {/** toast pop up */}
+      {toast && (
+        <div className="toast">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
