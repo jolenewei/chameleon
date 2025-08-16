@@ -1,3 +1,4 @@
+// ---- constants / messaging ids ----
 const MSG = {
   REWRITE_TEXT: "CHAMELEON_REWRITE_TEXT",
   APPLY_REWRITE: "CHAMELEON_APPLY_REWRITE",
@@ -6,21 +7,29 @@ const MSG = {
   OPEN_OPTIONS: "CHAMELEON_OPEN_OPTIONS",
 };
 
-// gmail editable finder
+// ---- tiny logger to prove we’re injected ----
+(function hello() {
+  const where = window.top === window ? "top" : "frame";
+  console.log(`[Chameleon CS] loaded in ${where} window`, location.href);
+})();
+
+// ---- find gmail compose editable ----
 function findActiveEditable() {
-  // try current selection container first
-  const sel = window.getSelection();
+  // prefer current selection container
+  const sel = window.getSelection && window.getSelection();
   if (sel && sel.anchorNode) {
     const near = closestEditable(sel.anchorNode);
     if (near) return near;
   }
-  // 1) common gmail compose
+
+  // common Gmail compose areas
   const a = document.querySelector('div[contenteditable="true"][aria-label*="Message"]');
   if (a) return a;
-  // 2) fallback: any role="textbox" inside compose
+
   const b = document.querySelector('div[role="textbox"][contenteditable="true"]');
   if (b) return b;
-  // 3) last resort: any contenteditable in the viewport
+
+  // any visible editable as last resort
   const cands = Array.from(document.querySelectorAll('div[contenteditable="true"]'));
   return cands.find(el => el.offsetParent !== null) || null;
 }
@@ -31,24 +40,24 @@ function closestEditable(node) {
     if (
       el.matches &&
       (el.matches('div[contenteditable="true"][aria-label*="Message"]') ||
-       el.matches('div[role="textbox"][contenteditable="true"]'))
+       el.matches('div[role="textbox"][contenteditable="true"]') ||
+       el.matches('div[contenteditable="true"]'))
     ) return el;
     el = el.parentElement;
   }
   return null;
 }
 
-
-// inline css
+// ---- inline UI (mini chip + toast) ----
 const CHAMELEON_STYLE_ID = "chameleon-inline-style";
 const STYLE = `
 #chameleon-mini {
   position: fixed;
   z-index: 2147483647;
-  background: #111;
+  background: #16a34a; /* green */
   color: #fff;
   padding: 6px 10px;
-  border-radius: 14px;
+  border-radius: 999px;
   font-size: 12px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   box-shadow: 0 6px 18px rgba(0,0,0,0.25);
@@ -58,8 +67,8 @@ const STYLE = `
   align-items: center;
   gap: 6px;
 }
-#chameleon-mini .dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
-#chameleon-mini:hover { background: #222; }
+#chameleon-mini .dot { width: 6px; height: 6px; border-radius: 999px; background: #fff; opacity: .9; }
+#chameleon-mini:hover { filter: brightness(1.05); }
 #chameleon-toast {
   position: fixed;
   left: 50%;
@@ -75,26 +84,22 @@ const STYLE = `
 }
 `;
 function ensureStyle() {
-  if (document.getElementById(CHAMELEON_STYLE_ID)) return;
-  const el = document.createElement("style");
-  el.id = CHAMELEON_STYLE_ID;
-  el.textContent = STYLE;
-  document.documentElement.appendChild(el);
+  if (!document.getElementById(CHAMELEON_STYLE_ID)) {
+    const el = document.createElement("style");
+    el.id = CHAMELEON_STYLE_ID;
+    el.textContent = STYLE;
+    document.documentElement.appendChild(el);
+  }
 }
 
-// main logic
-let mini;
-let toast;
-let lastRange = null;
-
-init();
+let mini, toast, lastRange = null;
 
 function init() {
   ensureStyle();
 
   mini = document.createElement("div");
   mini.id = "chameleon-mini";
-  mini.innerHTML = `<span class="dot"></span><span>Rewrite ✨</span>`;
+  mini.innerHTML = `<span class="dot"></span><span>Rewrite in Chameleon</span>`;
   document.documentElement.appendChild(mini);
   mini.addEventListener("mousedown", (e) => e.preventDefault());
   mini.addEventListener("click", onMiniClick);
@@ -104,20 +109,24 @@ function init() {
   toast.textContent = "Replaced ✓";
   document.documentElement.appendChild(toast);
 
-  document.addEventListener("selectionchange", handleSelection);
+  document.addEventListener("selectionchange", handleSelection, true);
   window.addEventListener("scroll", hideMini, true);
   window.addEventListener("resize", hideMini, true);
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg && msg.type === MSG.APPLY_REWRITE) {
+      console.log("[Chameleon CS] APPLY_REWRITE received");
       applyRewrite((msg.payload && msg.payload.text) || "");
       sendResponse({ ok: true });
     }
   });
+
+  console.log("[Chameleon CS] init complete");
 }
+init();
 
 function handleSelection() {
-  const sel = window.getSelection();
+  const sel = window.getSelection && window.getSelection();
   if (!sel || sel.isCollapsed) { hideMini(); return; }
 
   const editable = findActiveEditable();
@@ -136,48 +145,55 @@ function positionMini(rect) {
   mini.style.left = `${rect.right + padding}px`;
   mini.style.top = `${rect.top + window.scrollY - 2}px`;
 }
-
-function hideMini() { mini.style.display = "none"; }
+function hideMini() { if (mini) mini.style.display = "none"; }
 
 async function onMiniClick() {
   const text = getSelectedText();
   if (!text) return;
   await chrome.runtime.sendMessage({ type: MSG.SAVE_LAST_SOURCE, payload: { text } });
-  mini.innerHTML = `<span class="dot"></span><span>Loaded…</span>`;
-  setTimeout(() => (mini.innerHTML = `<span class="dot"></span><span>Rewrite ✨</span>`), 900);
+  mini.innerHTML = `<span class="dot"></span><span>Loaded ✓</span>`;
+  setTimeout(() => (mini.innerHTML = `<span class="dot"></span><span>Rewrite in Chameleon</span>`), 900);
 }
 
 function getSelectedText() {
-  const sel = window.getSelection();
+  const sel = window.getSelection && window.getSelection();
   if (!sel || sel.isCollapsed) return "";
   return sel.toString().trim();
 }
 
 function applyRewrite(newText) {
   const editable = findActiveEditable();
-  if (!editable) return;
+  if (!editable) {
+    console.warn("[Chameleon CS] no editable found");
+    return;
+  }
 
+  // prefer exact range replace when we have it
   if (lastRange) {
     lastRange.deleteContents();
     const node = document.createTextNode(newText);
     lastRange.insertNode(node);
 
     const sel = window.getSelection();
-    if (!sel) return;
-    sel.removeAllRanges();
-    const range = document.createRange();
-    range.setStartAfter(node);
-    range.collapse(true);
-    sel.addRange(range);
+    if (sel) {
+      sel.removeAllRanges();
+      const range = document.createRange();
+      range.setStartAfter(node);
+      range.collapse(true);
+      sel.addRange(range);
+    }
 
     flashToast();
-  } else {
-    document.execCommand("insertText", false, newText);
-    flashToast();
+    return;
   }
+
+  // fallback: execCommand
+  document.execCommand("insertText", false, newText);
+  flashToast();
 }
 
 function flashToast() {
+  if (!toast) return;
   toast.style.display = "block";
   setTimeout(() => (toast.style.display = "none"), 1500);
 }

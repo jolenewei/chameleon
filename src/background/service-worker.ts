@@ -19,20 +19,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       switch (message?.type) {
         case MSG.REWRITE_TEXT: {
           const { text, tone, goal, customTone, customGoal, customPrompt, compareTones, tonesForCompare } = message.payload;
-        
-          // get key & model
-          const [keyObj, modelObj] = await Promise.all([
+
+          // get key & model (env fallback)
+          const [apiKey, modelObj] = await Promise.all([
             getApiKey(),
-            chrome.storage.sync.get([STORAGE.MODEL])
+            chrome.storage.sync.get([STORAGE.MODEL]),
           ]);
-          const apiKey = keyObj;
           const model = (modelObj[STORAGE.MODEL] as string) || ENV_MODEL || DEFAULT_MODEL;
 
           console.log("[Chameleon] rewrite request", {
             hasKey: !!apiKey,
             model,
             compareTones: !!compareTones,
-            textLen: (text || "").length
+            textLen: (text || "").length,
           });
 
           if (!apiKey) {
@@ -41,12 +40,50 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             return;
           }
 
-          const prompt = buildPrompt({ text, tone, goal, customTone, customGoal, customPrompt, compareTones });
-          const data = await callOpenAI({ apiKey, model, prompt, compareTones, tones: tonesForCompare });
+          const prompt = buildPrompt({
+            text,
+            tone,
+            goal,
+            customTone,
+            customGoal,
+            customPrompt,
+            compareTones,
+          });
+
+          const data = await callOpenAI({
+            apiKey,
+            model,
+            prompt,
+            compareTones,
+            tones: tonesForCompare,
+          });
 
           console.log("[Chameleon] rewrite success", data);
-
           sendResponse({ ok: true, data });
+          return;
+        }
+        case MSG.APPLY_REWRITE: {
+          try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab?.id) { sendResponse({ ok: false, error: "NO_ACTIVE_TAB" }); return; }
+
+            // try to send to an already-injected content script
+            await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: message.payload });
+            sendResponse({ ok: true });
+          } catch {
+            // if the receiving end doesn't exist, inject the script, then retry once
+            try {
+              await chrome.scripting.executeScript({
+                target: { tabId: (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id! },
+                files: ["contentScript.js"],
+              });
+              const [tab2] = await chrome.tabs.query({ active: true, currentWindow: true });
+              await chrome.tabs.sendMessage(tab2.id!, { type: MSG.APPLY_REWRITE, payload: message.payload });
+              sendResponse({ ok: true });
+            } catch (e: any) {
+              sendResponse({ ok: false, error: "INJECT_OR_SEND_FAILED: " + (e?.message || String(e)) });
+            }
+          }
           return;
         }
         case MSG.SAVE_LAST_SOURCE: {
@@ -62,6 +99,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         case MSG.OPEN_OPTIONS: {
           chrome.runtime.openOptionsPage();
           sendResponse({ ok: true });
+          return;
+        }
+        case MSG.OPEN_POPUP: {
+          try {
+            await chrome.action.openPopup();
+            sendResponse({ ok: true });
+          } catch (e) {
+            sendResponse({ ok: false, error: String(e) });
+          }
           return;
         }
         default:

@@ -11,6 +11,7 @@
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
     "https://mail.google.com/*",
+    "https://inbox.google.com/*",
     "https://api.openai.com/*"
   ],
   "background": {
@@ -22,14 +23,18 @@
     "default_popup": "src/popup/index.html"
   },
   "options_page": "src/options/index.html",
+
   "content_scripts": [
     {
-      "matches": ["https://mail.google.com/*"],
+      "matches": ["https://mail.google.com/*", "https://inbox.google.com/*"],
       "js": ["contentScript.js"],
+      "all_frames": true,
       "run_at": "document_idle"
     }
   ],
+
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://api.openai.com;"
   }
 }
+

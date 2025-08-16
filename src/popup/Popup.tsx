@@ -72,16 +72,35 @@ export default function Popup() {
     }
   }
 
-
   async function applyInGmail() {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id || !result) return;
-      await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result } });
-      window.close();
+
+      try {
+        await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result } });
+        window.close();
+        return;
+      } catch (err: any) {
+        const errMsg = String(err?.message || err);
+        const looksLikeNoReceiver =
+          errMsg.includes("Receiving end does not exist") ||
+          errMsg.includes("Could not establish connection");
+
+        if (!looksLikeNoReceiver) throw err;
+
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["contentScript.js"],
+        });
+
+        // retry after injection
+        await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result } });
+        window.close();
+      }
     } catch (err) {
       alert("Open Gmail (refresh it), place your cursor in the compose box, then try Replace in Gmail again.");
-      console.warn("[Chameleon] tabs.sendMessage failed", err);
+      console.warn("[Chameleon] applyInGmail failed", err);
     }
   }
 
