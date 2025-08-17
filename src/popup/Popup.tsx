@@ -3,8 +3,8 @@ import { MSG } from "@common/constants";
 
 type CompareItem = { tone: string; text: string };
 
-const tones = ["casual","formal","friendly","assertive","slightly formal"] as const;
-const goals = ["auto","follow-up","apply for job","ask for help"] as const;
+const tones = ["auto", "casual","formal","friendly","assertive","slightly formal"] as const;
+const goals = ["auto","follow-up","apply for job", "ask for help"] as const;
 
 export default function Popup() {
   const [source, setSource] = useState("");
@@ -28,7 +28,6 @@ export default function Popup() {
         const reply = await chrome.runtime.sendMessage({ type: MSG.GET_LAST_SOURCE });
         if (reply?.ok && reply.text) setSource(reply.text);
       } catch (err) {
-        // SW might not be awake yet — no big deal
         console.warn("[Chameleon] popup init: SW sleeping", err);
       }
     })();
@@ -67,7 +66,7 @@ export default function Popup() {
       setTimeout(() => setToast(null), 2000);
     } catch (e) {
       console.error("Clipboard copy failed", e);
-      setToast("Copy failed");
+      setToast("Copy failed. Please manually copy & paste.");
       setTimeout(() => setToast(null), 2000);
     }
   }
@@ -155,7 +154,7 @@ export default function Popup() {
 
       {/* selected text */}
       <section className="sec">
-        <label>Selected Text</label>
+        <label>Text to rewrite</label>
         <textarea
           className="textarea--source"
           rows={3}
@@ -168,7 +167,7 @@ export default function Popup() {
       {/* controls */}
       <section className="sec">
         <div className="group">
-          <div className="field-head"><span className="label">Tone</span></div>
+          <div className="field-head"><span className="label">TONE</span></div>
           <div className="row wrap">
             {tones.map(t => (
               <button key={t} className={`pill ${tone===t ? "active":""}`} onClick={()=>setTone(t)}>{cap(t)}</button>
@@ -178,7 +177,7 @@ export default function Popup() {
         </div>
 
         <div className="group">
-          <div className="field-head"><span className="label">Goal</span></div>
+          <div className="field-head"><span className="label">GOAL</span></div>
           <div className="row wrap">
             {goals.map(g => (
               <button key={g} className={`pill ${goal===g ? "active":""}`} onClick={()=>setGoal(g)}>{cap(g)}</button>
@@ -247,7 +246,7 @@ export default function Popup() {
       )}
 
       <footer className="ftr">
-        <small>Tip: select text in Gmail, then click the extension icon.</small>
+        <small>Tip: select text in Gmail, then click "Rewrite in Chameleon."</small>
       </footer>
 
       {/** toast pop up */}

@@ -142,6 +142,7 @@ Rules:
 - Preserve names, links, dates, numbers.
 - Return only the rewritten text (no preface).
 - Match requested tone and align to stated goal when provided.
+- Try to format like an email with the correct indentation if the message seems like the full email.
 
 Input:
 ---
@@ -153,12 +154,14 @@ ${text}
     return base + `Rewrite the input in the requested tones. Output JSON array of { "tone": string, "text": string }.`;
   }
 
-  const t = tone === "custom" ? (customTone || "") : tone || "";
+  const t0 = tone === "custom" ? (customTone || "") : tone || "";
+  const t = t0 === "auto" ? "" : t0;
   const g0 = goal === "custom" ? (customGoal || "") : goal || "";
   const g = g0 == "auto" ? "" : g0;
 
   let directives = "";
-  if (t) directives += `Tone: ${t}.\n`;
+  if (t) directives += `Tone: ${t}.\n`; 
+  if (t0 === "auto") directives += `Infer the likely tone from the context of their message (e.g. formal / casual / apologetic ) and optimize for it.\n`;
   if (g) directives += `Goal: ${g}.\n`;
   if (g0 === "auto") directives += `Infer the likely goal from their message (e.g. follow-up / ask for help / apply for a job) and optimize for it.\n`;
   if (customPrompt) directives += `Additional notes: ${customPrompt}\n`;
