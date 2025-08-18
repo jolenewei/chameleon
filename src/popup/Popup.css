@@ -332,6 +332,51 @@ body {
     color: var(--muted);
 }
 
+/* small link next to Result label */
+.result-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.link-btn {
+    appearance: none;
+    background: none;
+    border: 0;
+    color: var(--green);
+    font-size: 9px;
+    font-weight: 600;
+    padding: 0;
+    margin: 1px;
+    cursor: pointer;
+}
+
+.link-btn:disabled {
+    opacity: .4;
+    cursor: default;
+}
+
+/* compare tone action row + button */
+.tone-actions {
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+}
+
+.mini-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+}
+
+.mini-btn:hover {
+    border-color: var(--green);
+}
+
 /* toast */
 .popup .toast {
     position: fixed;

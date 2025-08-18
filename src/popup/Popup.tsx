@@ -3,14 +3,14 @@ import { MSG } from "@common/constants";
 
 type CompareItem = { tone: string; text: string };
 
-const tones = ["auto", "casual","formal","friendly","assertive","slightly formal"] as const;
-const goals = ["auto","follow-up","apply for job", "ask for help"] as const;
+const tones = ["auto","casual","formal","friendly","assertive","slightly formal"] as const;
+const goals = ["auto","follow-up","apply for job","ask for help"] as const;
 
 export default function Popup() {
   const [source, setSource] = useState("");
   const [result, setResult] = useState("");
-  const [busy, setBusy] = useState(false);
   const [subject, setSubject] = useState("");
+  const [busy, setBusy] = useState(false);
 
   const [tone, setTone] = useState<string | null>(null);
   const [goal, setGoal] = useState<string | null>(null);
@@ -64,12 +64,10 @@ export default function Popup() {
     if (!result) return;
     try {
       await navigator.clipboard.writeText(result);
-      setToast("Copied!");
-      setTimeout(() => setToast(null), 2000);
+      showToast("Copied!");
     } catch (e) {
       console.error("Clipboard copy failed", e);
-      setToast("Copy failed. Please manually copy & paste.");
-      setTimeout(() => setToast(null), 2000);
+      showToast("Copy failed");
     }
   }
 
@@ -83,20 +81,12 @@ export default function Popup() {
         window.close();
         return;
       } catch (err: any) {
-        const errMsg = String(err?.message || err);
-        const looksLikeNoReceiver =
-          errMsg.includes("Receiving end does not exist") ||
-          errMsg.includes("Could not establish connection");
+        const msg = String(err?.message || err);
+        const noReceiver = msg.includes("Receiving end does not exist") || msg.includes("Could not establish connection");
+        if (!noReceiver) throw err;
 
-        if (!looksLikeNoReceiver) throw err;
-
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ["contentScript.js"],
-        });
-
-        // retry after injection
-        await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result } });
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["contentScript.js"] });
+        await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result, subject } });
         window.close();
       }
     } catch (err) {
@@ -134,6 +124,19 @@ export default function Popup() {
   function handleError(err?: string) {
     if (err === "NO_API_KEY") alert("Set your OpenAI API key in Options first (gear icon).");
     else alert("Error: " + (err || "unknown"));
+  }
+
+  function showToast(text: string) {
+    setToast(text);
+    setTimeout(() => setToast(null), 1600);
+  }
+
+  function useAsSource(text?: string) {
+    const t = (text ?? result ?? "").trim();
+    if (!t) return;
+    setSource(t);
+    setTab("rewrite");
+    showToast("Loaded into editor");
   }
 
   const canApply = useMemo(() => !!result && !busy, [result, busy]);
@@ -215,7 +218,10 @@ export default function Popup() {
             </>
           ) : null}
 
-          <label>Result</label>
+          <div className="result-head">
+            <label>Result</label>
+          </div>
+
           <textarea
             className="textarea--result"
             rows={4}
@@ -223,6 +229,7 @@ export default function Popup() {
             onChange={e=>setResult(e.target.value)}
             placeholder="Your rewrite will appear here…"
           />
+          <button className="link-btn" disabled={!result} onClick={()=>useAsSource(result)}>Edit this result ↑</button>
         </section>
       ) : (
         <section className="sec">
@@ -248,6 +255,9 @@ export default function Popup() {
               <div className="tone-card" key={i}>
                 <div className="tone-title">{cap(it.tone)}</div>
                 <div className="tone-body">{it.text}</div>
+                <div className="tone-actions">
+                  <button className="mini-btn" onClick={()=>useAsSource(it.text)}>Use as source</button>
+                </div>
               </div>
             ))}
           </div>
@@ -258,12 +268,7 @@ export default function Popup() {
         <small>Tip: select text in Gmail, then click "Rewrite in Chameleon."</small>
       </footer>
 
-      {/** toast pop up */}
-      {toast && (
-        <div className="toast">
-          {toast}
-        </div>
-      )}
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }

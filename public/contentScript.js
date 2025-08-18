@@ -217,15 +217,31 @@ async function onMiniClick() {
   const text = getSelectedText() || (findActiveEditable()?.innerText || "").trim();
   if (!text) return;
 
+  mini.innerHTML = `<span class="dot"></span><span>Loading…</span>`;
+  try {
+    await openPopupSafely(text);
+  } finally {
+    setTimeout(() => (mini.innerHTML = `<span class="dot"></span><span>Rewrite in Chameleon</span>`), 700);
+  }
+}
+
+async function openPopupSafely(text) {
   try {
     await chrome.runtime.sendMessage({ type: MSG.SAVE_LAST_SOURCE, payload: { text } });
-    await chrome.runtime.sendMessage({ type: MSG.OPEN_POPUP, payload: { text } });
-  } catch (err) {
-    console.warn("[Chameleon CS] OPEN_POPUP failed", err);
+  } catch (_) {
+    // if SW is not reachable, write session storage directly from CS
+    try { await chrome.storage.session.set({ chameleon_last_source_text: text }); } catch {}
   }
 
-  mini.innerHTML = `<span class="dot"></span><span>Loading…</span>`;
-  setTimeout(() => (mini.innerHTML = `<span class="dot"></span><span>Rewrite in Chameleon</span>`), 900);
+  try {
+    await chrome.runtime.sendMessage({ type: "CHAMELEON_OPEN_POPUP", payload: { text } });
+    return;
+  } catch (e) {
+    console.warn("[Chameleon CS] OPEN_POPUP failed", e);
+    // fallback: open the popup page directly from the content script
+    const url = chrome.runtime.getURL("src/popup/index.html");
+    window.open(url, "_blank", "popup=1,width=460,height=560");
+  }
 }
 
 function getSelectedText() {
