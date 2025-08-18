@@ -103,10 +103,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
         case MSG.OPEN_POPUP: {
           try {
+            const txt = message?.payload?.text?.trim?.();
+            if (txt) {
+              await chrome.storage.session.set({ [STORAGE.LAST_SOURCE_TEXT]: txt });
+            }
             await chrome.action.openPopup();
             sendResponse({ ok: true });
           } catch (e) {
-            sendResponse({ ok: false, error: String(e) });
+            try {
+              const url = chrome.runtime.getURL("src/popup/index.html");
+              await chrome.windows.create({ url, type: "popup", width: 460, height: 560 });
+              sendResponse({ ok: true, fallback: true });
+            } catch (e2) {
+              sendResponse({ ok: false, error: String(e2) });
+            }
           }
           return;
         }

@@ -5,6 +5,7 @@ const MSG = {
   SAVE_LAST_SOURCE: "CHAMELEON_SAVE_LAST_SOURCE",
   GET_LAST_SOURCE: "CHAMELEON_GET_LAST_SOURCE",
   OPEN_OPTIONS: "CHAMELEON_OPEN_OPTIONS",
+  OPEN_POPUP: "CHAMELEON_OPEN_POPUP", // ✅ added
 };
 
 // ---- tiny logger to prove we’re injected ----
@@ -52,7 +53,7 @@ function closestEditable(node) {
 const CHAMELEON_STYLE_ID = "chameleon-inline-style";
 const STYLE = `
 #chameleon-mini {
-  position: fixed;
+  position: fixed; /* viewport coords */
   z-index: 2147483647;
   background: #16a34a; /* green */
   color: #fff;
@@ -142,16 +143,27 @@ function handleSelection() {
 
 function positionMini(rect) {
   const padding = 8;
+  // position: fixed => rect.* are viewport-relative; don't add scroll offsets
   mini.style.left = `${rect.right + padding}px`;
-  mini.style.top = `${rect.top + window.scrollY - 2}px`;
+  mini.style.top  = `${rect.top}px`;
 }
+
 function hideMini() { if (mini) mini.style.display = "none"; }
 
 async function onMiniClick() {
-  const text = getSelectedText();
+  const text = getSelectedText() || (findActiveEditable()?.innerText || "").trim();
   if (!text) return;
-  await chrome.runtime.sendMessage({ type: MSG.SAVE_LAST_SOURCE, payload: { text } });
-  mini.innerHTML = `<span class="dot"></span><span>Loaded ✓</span>`;
+
+  try {
+    // Save first so the popup can read it on mount
+    await chrome.runtime.sendMessage({ type: MSG.SAVE_LAST_SOURCE, payload: { text } });
+    // Then ask background to open the popup (will use openPopup or fallback window)
+    await chrome.runtime.sendMessage({ type: MSG.OPEN_POPUP, payload: { text } });
+  } catch (err) {
+    console.warn("[Chameleon CS] OPEN_POPUP failed", err);
+  }
+
+  mini.innerHTML = `<span class="dot"></span><span>Loading…</span>`;
   setTimeout(() => (mini.innerHTML = `<span class="dot"></span><span>Rewrite in Chameleon</span>`), 900);
 }
 
