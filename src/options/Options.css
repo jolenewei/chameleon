@@ -1,18 +1,18 @@
 :root {
-    --bg: white;
-    --panel: white;
-    --text: black;
-    --muted: #646465;
-    --accent: #46ac42;
+    --bg: #f7faf7;
+    --panel: #ffffff;
+    --text: #0f172a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+
+    --green: #16a34a;
+    --green-600: #15803d;
+    --green-weak: #9dcb64;
+    --grad: linear-gradient(90deg, #1e952c 0%, #64bc35 60%, #71c444 100%);
 }
 
 * {
     box-sizing: border-box
-}
-
-.opt,
-.opt * {
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 html,
@@ -21,67 +21,162 @@ body {
     padding: 0;
     background: var(--bg);
     color: var(--text);
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
+/* ---------- shell ---------- */
 .opt {
-    max-width: 640px;
+    max-width: 760px;
     margin: 40px auto;
+    padding: 0 18px 24px;
+}
+
+.opt-hdr {
+    display: flex;
+    align-items: center;
     background: var(--panel);
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid #222;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
 }
 
-.opt h1 {
-    margin-top: 0
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-.opt label {
+.brand img {
+    width: 28px;
+    height: 28px
+}
+
+.brand .t h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: .02em;
+    color: #0a2f1a;
+    text-transform: uppercase;
+}
+
+.brand .t p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #0f5132;
+}
+
+/* ---------- card body ---------- */
+.opt-body {
+    margin-top: 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
+}
+
+.field+.field {
+    margin-top: 14px
+}
+
+label {
     display: block;
-    margin-top: 12px;
-    margin-bottom: 6px;
+    font-size: 12px;
     color: var(--muted);
+    margin: 0 0 6px;
 }
 
 .opt input {
-    font-size: 13px;
     width: 100%;
-    border: 1px solid #111;
-    background: #fff;
-    border-radius: 10px;
-    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 14px;
     outline: none;
-    font-family: inherit;
+    background: #fff;
 }
 
 .opt input:focus {
-    border-color: var(--accent)
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, .18);
 }
 
-.opt .hint {
+.hint {
+    margin: 6px 2px 0;
     color: var(--muted);
     font-size: 12px;
-    margin-top: 10px;
 }
 
-.opt .row {
+.hint code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+}
+
+/* ---------- actions ---------- */
+.actions {
     display: flex;
-    gap: 8px;
-    margin-top: 12px
+    gap: 10px;
+    margin-top: 18px;
 }
 
-.opt button {
-    background-color: var(--accent);
-    color: #001534;
-    border: 0;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-weight: 600;
+.opt .btn {
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 10px;
     cursor: pointer;
-    font-family: inherit;
+    font-weight: 600;
+    transition: transform .06s ease, box-shadow .12s ease, filter .12s ease;
 }
 
-.opt .status {
+.opt .btn:hover {
+    filter: brightness(98%)
+}
+
+.opt .btn:active {
+    transform: translateY(1px)
+}
+
+.opt .btn-primary {
+    color: #fff;
+    border: 0;
+    background: var(--grad);
+    box-shadow: 0 6px 18px rgba(22, 163, 74, .25);
+}
+
+.btn-primary:hover {
+    filter: saturate(105%) brightness(1.02)
+}
+
+.btn-ghost {
+    background: #fff;
+}
+
+/* ---------- status ---------- */
+.status {
     margin-top: 12px;
-    font-size: 12px
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    display: inline-block;
+}
+
+.status.ok {
+    color: #065f46;
+    background: #ecfdf5;
+    border-color: #d1fae5;
+}
+
+.status.err {
+    color: #7f1d1d;
+    background: #fef2f2;
+    border-color: #fee2e2;
 }

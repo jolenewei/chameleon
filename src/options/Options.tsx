@@ -1,52 +1,86 @@
 import React, { useEffect, useState } from "react";
-import { DEFAULT_MODEL, STORAGE } from "@common/constants";
+import { STORAGE } from "@common/constants";
 
 export default function Options() {
   const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState(DEFAULT_MODEL);
+  const [model, setModel] = useState("gpt-4o-mini");
   const [status, setStatus] = useState("");
 
+  // load existing settings
   useEffect(() => {
     (async () => {
-      const obj = await chrome.storage.sync.get([STORAGE.API_KEY, STORAGE.MODEL]);
-      setApiKey(obj[STORAGE.API_KEY] || "");
-      setModel(obj[STORAGE.MODEL] || DEFAULT_MODEL);
+      const s = await chrome.storage.sync.get([STORAGE.API_KEY, STORAGE.MODEL]);
+      setApiKey(s[STORAGE.API_KEY] || "");
+      setModel(s[STORAGE.MODEL] || "gpt-4o-mini");
     })();
   }, []);
 
   async function save() {
-    await chrome.storage.sync.set({ [STORAGE.API_KEY]: apiKey.trim(), [STORAGE.MODEL]: (model || DEFAULT_MODEL).trim() });
-    setStatus("Saved ✓");
+    await chrome.storage.sync.set({
+      [STORAGE.API_KEY]: apiKey.trim(),
+      [STORAGE.MODEL]: model.trim(),
+    });
+    setStatus("✓ Saved");
+    setTimeout(() => setStatus(""), 1800);
   }
 
   async function test() {
     setStatus("Testing…");
     try {
-      const res = await fetch("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey.trim()}` },
-        body: JSON.stringify({ model: model || DEFAULT_MODEL, input: [{ role: "user", content: "Say OK." }] })
-      });
-      if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-      setStatus("Connection OK ✓");
+      if (!apiKey.startsWith("sk-")) throw new Error("That doesn’t look like an API key.");
+      setStatus("✓ Looks good");
     } catch (e: any) {
-      setStatus("Failed: " + e.message);
+      setStatus("⚠ " + (e?.message || "Test failed"));
     }
+    setTimeout(() => setStatus(""), 2200);
   }
+
+  const ok = status.startsWith("✓");
 
   return (
     <main className="opt">
-      <h1>Chameleon Settings</h1>
-      <label>OpenAI API Key</label>
-      <input type="password" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="sk-…" />
-      <label>Model</label>
-      <input value={model} onChange={e=>setModel(e.target.value)} placeholder="e.g., gpt-5-mini" />
-      <div className="hint">Your key is stored locally via chrome.storage and used only to call OpenAI.</div>
-      <div className="row">
-        <button onClick={save}>Save</button>
-        <button onClick={test}>Test</button>
-      </div>
-      <div className="status">{status}</div>
+      <header className="opt-hdr">
+        <div className="brand">
+          <img src="/assets/icon48.png" alt="Chameleon" />
+          <div className="t">
+            <h1>Chameleon</h1>
+            <p>adapts your emails to what you want</p>
+          </div>
+        </div>
+      </header>
+
+      <section className="opt-body">
+        <div className="field">
+          <label>OpenAI API Key</label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="sk-…"
+          />
+          <p className="hint">
+            Stored locally with <code>chrome.storage</code>. Used only to call OpenAI.
+          </p>
+        </div>
+
+        <div className="field">
+          <label>Model</label>
+          <input
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder="e.g., gpt-4o-mini"
+          />
+        </div>
+
+        <div className="actions">
+          <button className="btn btn-primary" onClick={save}>Save</button>
+          <button className="btn btn-ghost" onClick={test}>Test</button>
+        </div>
+
+        {status && (
+          <div className={`status ${ok ? "ok" : "err"}`}>{status}</div>
+        )}
+      </section>
     </main>
   );
 }
