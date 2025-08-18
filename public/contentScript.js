@@ -117,10 +117,73 @@ function init() {
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg && msg.type === MSG.APPLY_REWRITE) {
       console.log("[Chameleon CS] APPLY_REWRITE received");
-      applyRewrite((msg.payload && msg.payload.text) || "");
+      const body = (msg.payload && msg.payload.text) || "";
+      const subject = (msg.payload && msg.payload.subject) || "";
+      if (subject) setGmailSubject(subject);
+      applyRewrite(body);
       sendResponse({ ok: true });
     }
   });
+
+  // --- helpers to apply subject + body ---
+
+  function setGmailSubject(subject) {
+    const el =
+      document.querySelector('input[name="subjectbox"]') ||
+      document.querySelector('input[aria-label="Subject"]');
+    if (!el) return;
+    el.focus();
+    el.value = subject;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  function plainTextToEmailHTML(text) {
+    const escape = (s) => s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    // split paragraphs on blank lines
+    return text
+      .trim()
+      .split(/\n{2,}/)
+      .map(p => `<div>${escape(p).replace(/\n/g, "<br>")}</div>`)
+      .join("");
+  }
+
+  function applyRewrite(newText) {
+    const editable = findActiveEditable();
+    if (!editable) {
+      console.warn("[Chameleon CS] no editable found");
+      return;
+    }
+
+    const html = plainTextToEmailHTML(newText);
+
+    if (lastRange) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(lastRange);
+      }
+      document.execCommand("insertHTML", false, html);
+      lastRange = null;
+      flashToast();
+      return;
+    }
+
+    // otherwise replace entire rewrite body
+    editable.innerHTML = html;
+    // move caret to end
+    const range = document.createRange();
+    range.selectNodeContents(editable);
+    range.collapse(false);
+    const sel2 = window.getSelection();
+    if (sel2) {
+      sel2.removeAllRanges();
+      sel2.addRange(range);
+    }
+    flashToast();
+  }
 
   console.log("[Chameleon CS] init complete");
 }
@@ -155,9 +218,7 @@ async function onMiniClick() {
   if (!text) return;
 
   try {
-    // Save first so the popup can read it on mount
     await chrome.runtime.sendMessage({ type: MSG.SAVE_LAST_SOURCE, payload: { text } });
-    // Then ask background to open the popup (will use openPopup or fallback window)
     await chrome.runtime.sendMessage({ type: MSG.OPEN_POPUP, payload: { text } });
   } catch (err) {
     console.warn("[Chameleon CS] OPEN_POPUP failed", err);

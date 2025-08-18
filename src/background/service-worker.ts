@@ -150,9 +150,9 @@ Rules:
 - Keep the original meaning and facts.
 - Improve clarity and flow; concise by default.
 - Preserve names, links, dates, numbers.
-- Return only the rewritten text (no preface).
-- Match requested tone and align to stated goal when provided.
-- Try to format like an email with the correct indentation if the message seems like the full email.
+- Produce clean email paragraphing (blank lines between paragraphs).
+- Do NOT wrap the body with quotes or code fences.
+- If a "Subject" would help, propose one.
 
 Input:
 ---
@@ -167,16 +167,20 @@ ${text}
   const t0 = tone === "custom" ? (customTone || "") : tone || "";
   const t = t0 === "auto" ? "" : t0;
   const g0 = goal === "custom" ? (customGoal || "") : goal || "";
-  const g = g0 == "auto" ? "" : g0;
+  const g = g0 === "auto" ? "" : g0;
 
   let directives = "";
-  if (t) directives += `Tone: ${t}.\n`; 
-  if (t0 === "auto") directives += `Infer the likely tone from the context of their message (e.g. formal / casual / apologetic ) and optimize for it.\n`;
+  if (t) directives += `Tone: ${t}.\n`;
+  if (t0 === "auto") directives += `Infer likely tone from context.\n`;
   if (g) directives += `Goal: ${g}.\n`;
-  if (g0 === "auto") directives += `Infer the likely goal from their message (e.g. follow-up / ask for help / apply for a job) and optimize for it.\n`;
+  if (g0 === "auto") directives += `Infer the likely goal from the message (e.g., follow-up, ask for help, apply for a job) and optimize for it.\n`;
   if (customPrompt) directives += `Additional notes: ${customPrompt}\n`;
 
-  return base + directives + "Now return the rewritten text only.";
+  return (
+    base +
+    directives +
+    `Now return **ONLY** valid JSON:\n{"subject": string, "body": string}\n- "subject": a concise subject line (can be empty if not applicable)\n- "body": the email body with paragraph breaks using \\n\\n\n`
+  );
 }
 
 async function callOpenAI(params: {
@@ -195,7 +199,7 @@ async function callOpenAI(params: {
         { role: "user", content: `Tones to compare: ${tones.join(", ")}.` }
       ]
     : [
-        { role: "system", content: "Return only the rewritten email text. No preamble." },
+        { role: "system", content: "Return only what the user requested. If they asked for JSON, return valid JSON and nothing else." },
         { role: "user", content: prompt }
       ];
 
@@ -212,12 +216,21 @@ async function callOpenAI(params: {
     throw new Error(`OpenAI error ${res.status}: ${detail || res.statusText}`);
   }
 
-  const data = await res.json() as any;
-  const text = (data.choices?.[0]?.message?.content ?? "").trim();
+  const data = (await res.json()) as any;
+  const raw = (data.choices?.[0]?.message?.content ?? "").trim();
 
   if (compareTones) {
-    try { return { compare: JSON.parse(text) }; }
-    catch { return { compare: tones.map(t => ({ tone: t, text })) }; }
+    try { return { compare: JSON.parse(raw) }; }
+    catch { return { compare: tones.map(t => ({ tone: t, text: raw })) }; }
   }
-  return { text };
+
+  // try to parse {subject, body}; fall back to treating whole thing as body
+  try {
+    const obj = JSON.parse(raw);
+    const subject = (obj?.subject ?? "").toString();
+    const body = (obj?.body ?? "").toString();
+    return { text: body, subject };
+  } catch {
+    return { text: raw, subject: "" };
+  }
 }

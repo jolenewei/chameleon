@@ -10,6 +10,7 @@ export default function Popup() {
   const [source, setSource] = useState("");
   const [result, setResult] = useState("");
   const [busy, setBusy] = useState(false);
+  const [subject, setSubject] = useState("");
 
   const [tone, setTone] = useState<string | null>(null);
   const [goal, setGoal] = useState<string | null>(null);
@@ -55,6 +56,7 @@ export default function Popup() {
       return;
     }
     setResult(res.data.text || "");
+    setSubject(res.data.subject || "");
     setBusy(false);
   }
 
@@ -77,7 +79,7 @@ export default function Popup() {
       if (!tab?.id || !result) return;
 
       try {
-        await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result } });
+        await chrome.tabs.sendMessage(tab.id, { type: MSG.APPLY_REWRITE, payload: { text: result, subject } });
         window.close();
         return;
       } catch (err: any) {
@@ -205,6 +207,13 @@ export default function Popup() {
             <button className="primary" disabled={!canApply} onClick={applyInGmail}>Replace in Gmail</button>
             <button className="primary" disabled={!result || busy} onClick={copyToClipboard}>Copy to Clipboard</button>
           </div>
+
+          {subject ? (
+            <>
+              <label>Suggested Subject</label>
+              <input value={subject} onChange={e=>setSubject(e.target.value)} />
+            </>
+          ) : null}
 
           <label>Result</label>
           <textarea
